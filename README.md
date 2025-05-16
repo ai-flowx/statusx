@@ -1,0 +1,2 @@
+# statusx
+ai status
