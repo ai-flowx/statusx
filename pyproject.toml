@@ -16,7 +16,7 @@ authors = [
 dependencies = [
     "fastapi>=0.115.12",
     "uvicorn>=0.22.0",
-    "httpx>=0.28.1",
+    "requests>=2.32.3",
     "python-dotenv>=1.1.0",
     "pydantic>=2.0.0",
     "python-multipart",  # for form data handling

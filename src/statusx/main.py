@@ -1,6 +1,7 @@
 import asyncio
-import httpx
+import json
 import os
+import requests
 import time
 import uvicorn
 
@@ -23,14 +24,14 @@ class Settings:
     DRIVEX_URL: str = os.getenv("DRIVEX_URL", "http://127.0.0.1")
     DRIVEX_KEY: str = os.getenv("DRIVEX_KEY", "")
     DRIVEX_TIMEOUT: int = int(os.getenv("DRIVEX_TIMEOUT", "6000"))
-    DRIVEX_MODELS: List[str] = [
-        "gpt-4o",
-        "gpt-4-turbo",
-        "gpt-3.5-turbo",
-    ]
 
 
 settings = Settings()
+
+
+class ModelCheckRequest(BaseModel):
+    models: Optional[List[str]] = Field(default=None, description="DriveX LLM models")
+    timeout: Optional[int] = Field(default=None, description="Timeout in seconds")
 
 
 class ModelHealthResponse(BaseModel):
@@ -46,27 +47,8 @@ class ModelsHealthResponse(BaseModel):
     timestamp: float
 
 
-class ModelCheckRequest(BaseModel):
-    models: Optional[List[str]] = Field(default=None, description="DriveX LLM models")
-    timeout: Optional[int] = Field(default=None, description="Timeout in seconds")
-
-
-async def check_model_health(model: str, timeout: int) -> ModelHealthResponse:
-    start_time = time.time()
-
-    if model.startswith("dall-e"):
-        endpoint = f"{settings.DRIVEX_URL}/images/generations"
-        payload = {"model": model, "prompt": "test", "n": 1, "size": "1024x1024"}
-    elif model.startswith("tts"):
-        endpoint = f"{settings.DRIVEX_URL}/audio/speech"
-        payload = {"model": model, "input": "Hello", "voice": "alloy"}
-    else:
-        endpoint = f"{settings.DRIVEX_URL}/chat/completions"
-        payload = {
-            "model": model,
-            "messages": [{"role": "user", "content": "Hello"}],
-            "max_tokens": 5
-        }
+def get_llm_models(timeout: int) -> List[str]:
+    endpoint = f"{settings.DRIVEX_URL}/models"
 
     headers = {
         "Authorization": f"Bearer {settings.DRIVEX_KEY}",
@@ -74,31 +56,64 @@ async def check_model_health(model: str, timeout: int) -> ModelHealthResponse:
     }
 
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                endpoint,
-                json=payload,
-                headers=headers,
-                timeout=timeout
+        response = requests.get(
+            endpoint,
+            headers=headers,
+            timeout=timeout
+        )
+
+        if response.status_code == 200:
+            data = response.json()
+            return [item["id"] for item in data["data"]]
+        else:
+            return []
+    except Exception as _:
+        return []
+
+
+def check_model_health(model: str, timeout: int) -> ModelHealthResponse:
+    start_time = time.time()
+
+    endpoint = f"{settings.DRIVEX_URL}/chat/completions"
+
+    headers = {
+        "Authorization": f"Bearer {settings.DRIVEX_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": "Hello"}],
+    }
+
+    try:
+        response = requests.post(
+            endpoint,
+            headers=headers,
+            json=payload,
+            timeout=timeout
+        )
+
+        latency = (time.time() - start_time) * 1000  # Convert to milliseconds
+
+        if response.status_code == 200:
+            return ModelHealthResponse(
+                model=model,
+                status="healthy",
+                latency_ms=round(latency, 2),
+                error=None
             )
-
-            latency = (time.time() - start_time) * 1000  # Convert to milliseconds
-
-            if response.status_code == 200:
-                return ModelHealthResponse(
-                    model=model,
-                    status="healthy",
-                    latency_ms=round(latency, 2),
-                    error=None
-                )
-            else:
+        else:
+            try:
                 error_detail = response.json().get("error", {}).get("message", str(response.text))
-                return ModelHealthResponse(
-                    model=model,
-                    status="unhealthy",
-                    latency_ms=round(latency, 2),
-                    error=f"HTTP {response.status_code}: {error_detail}"
-                )
+            except Exception:
+                error_detail = str(response.text)
+            return ModelHealthResponse(
+                model=model,
+                status="unhealthy",
+                latency_ms=round(latency, 2),
+                error=f"HTTP {response.status_code}: {error_detail}"
+            )
     except Exception as e:
         latency = (time.time() - start_time) * 1000
         return ModelHealthResponse(
@@ -141,11 +156,12 @@ async def check_models_health(
         _: None = Depends(verify_api_key)
 ):
     request = request or ModelCheckRequest()
-    models_to_check = request.models or settings.DRIVEX_MODELS
     timeout = request.timeout or settings.DRIVEX_TIMEOUT
 
+    loop = asyncio.get_event_loop()
+    models_to_check = await loop.run_in_executor(None, get_llm_models, timeout)
     health_results = await asyncio.gather(*[
-        check_model_health(model, timeout) for model in models_to_check
+        loop.run_in_executor(None, check_model_health, model, timeout) for model in models_to_check
     ])
 
     all_healthy = all(result.status == "healthy" for result in health_results)
@@ -163,7 +179,8 @@ async def check_specific_model(
         timeout: int = settings.DRIVEX_TIMEOUT,
         _: None = Depends(verify_api_key)
 ):
-    result = await check_model_health(model_id, timeout)
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, check_model_health, model_id, timeout)
 
     if result.status != "healthy":
         return JSONResponse(
