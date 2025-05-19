@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "statusx"
+version = "1.0.0"
+description = "statusx"
+readme = "README.md"
+requires-python = ">=3.13"
+license = {text = "MIT"}
+authors = [
+    {name = "Jia", email = "angersax@sina.com"},
+]
+
+dependencies = [
+    "fastapi>=0.115.12",
+    "uvicorn>=0.22.0",
+    "httpx>=0.28.1",
+    "python-dotenv>=1.1.0",
+    "pydantic>=2.0.0",
+    "python-multipart",  # for form data handling
+    "python-jose[cryptography]",  # for JWT tokens
+    "passlib[bcrypt]",  # for password hashing
+    "sqlalchemy>=2.0.0",  # optional: for database access
+    "alembic",  # optional: for database migrations
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov",
+    "black",
+    "isort",
+    "mypy",
+    "ruff",
+    "httpx",  # for testing FastAPI
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py313"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["statusx"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.13"
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
