@@ -1,5 +1,4 @@
 import asyncio
-import json
 import os
 import requests
 import time
@@ -7,7 +6,8 @@ import uvicorn
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
@@ -18,6 +18,8 @@ app = FastAPI(
     description="ai status",
     version="1.0.0",
 )
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 class Settings:
@@ -134,23 +136,28 @@ def verify_api_key():
 
 @app.get("/", tags=["Root"])
 async def root():
+    return FileResponse("static/index.html")
+
+
+@app.get("/api", tags=["Root"])
+async def api_root():
     return {
         "service": "statusx",
         "version": "1.0.0",
         "endpoints": {
-            "/health": "Service health check",
-            "/models/health": "Check health of multiple models",
-            "/models/{model_id}/health": "Check health of a specific model",
+            "/api/health": "Service health check",
+            "/api/models/health": "Check health of multiple models",
+            "/api/models/{model_id}/health": "Check health of a specific model",
         }
     }
 
 
-@app.get("/health", tags=["Health"])
+@app.get("/api/health", tags=["Health"])
 async def health_check():
     return {"status": "healthy", "timestamp": time.time()}
 
 
-@app.post("/models/health", response_model=ModelsHealthResponse, tags=["Models"])
+@app.post("/api/models/health", response_model=ModelsHealthResponse, tags=["Models"])
 async def check_models_health(
         request: ModelCheckRequest = None,
         _: None = Depends(verify_api_key)
@@ -173,7 +180,7 @@ async def check_models_health(
     )
 
 
-@app.get("/models/{model_id}/health", response_model=ModelHealthResponse, tags=["Models"])
+@app.get("/api/models/{model_id}/health", response_model=ModelHealthResponse, tags=["Models"])
 async def check_specific_model(
         model_id: str,
         timeout: int = settings.DRIVEX_TIMEOUT,

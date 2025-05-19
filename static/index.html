@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StatusX - DriveX Model Status Dashboard</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <style>
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+    }
+    .status-healthy {
+      background-color: #28a745;
+    }
+    .status-unhealthy {
+      background-color: #dc3545;
+    }
+    .status-loading {
+      background-color: #ffc107;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.5; }
+      50% { opacity: 1; }
+      100% { opacity: 0.5; }
+    }
+    .latency-bar {
+      height: 6px;
+      border-radius: 3px;
+      background-color: #e9ecef;
+      overflow: hidden;
+    }
+    .latency-fill {
+      height: 100%;
+      border-radius: 3px;
+      background-color: #28a745;
+    }
+    .latency-warning {
+      background-color: #ffc107;
+    }
+    .latency-danger {
+      background-color: #dc3545;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">StatusX</h1>
+      <p class="text-gray-600 mt-2">DriveX Model Status Dashboard</p>
+      <div id="system-status" class="mt-4 py-3 bg-gray-100 rounded-lg flex items-center justify-center">
+        <span id="overall-status-indicator" class="status-indicator status-loading"></span>
+        <span id="overall-status-text">Checking system status...</span>
+      </div>
+    </header>
+
+    <!-- Last updated -->
+    <div class="text-right text-sm text-gray-500 mb-4">
+      <span>Last updated: </span>
+      <span id="last-updated">Checking...</span>
+      <button id="refresh-btn" class="ml-2 px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs">
+        Refresh
+      </button>
+    </div>
+
+    <!-- Auto refresh toggle -->
+    <div class="flex justify-end mb-4">
+      <label class="inline-flex items-center text-sm text-gray-700">
+        <input type="checkbox" id="auto-refresh" class="form-checkbox h-4 w-4 text-blue-600" checked>
+        <span class="ml-2">Auto refresh (30s)</span>
+      </label>
+    </div>
+
+    <!-- Status Cards -->
+    <div id="status-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+      <div class="bg-white rounded-lg shadow p-4 animate-pulse">
+        <div class="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+        <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+        <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-4 animate-pulse">
+        <div class="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+        <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+        <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-4 animate-pulse">
+        <div class="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+        <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+        <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+      </div>
+    </div>
+
+    <!-- Detailed Metrics Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden mb-8">
+      <div class="p-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-800">Detailed Metrics</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead>
+            <tr class="bg-gray-50">
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latency</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Error</th>
+            </tr>
+          </thead>
+          <tbody id="metrics-table-body" class="bg-white divide-y divide-gray-200">
+            <tr>
+              <td colspan="4" class="px-6 py-4 text-center text-gray-500">Loading model metrics...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Past Incidents -->
+    <div class="bg-white rounded-lg shadow mb-8">
+      <div class="p-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-800">Past Incidents</h2>
+      </div>
+      <div id="past-incidents" class="p-4">
+        <p class="text-gray-500 text-center py-4">No past incidents recorded.</p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center text-gray-500 text-sm py-4">
+      <p>© 2025 StatusX - DriveX Model Status Dashboard</p>
+    </footer>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const statusCards = document.getElementById('status-cards');
+      const metricsTableBody = document.getElementById('metrics-table-body');
+      const lastUpdated = document.getElementById('last-updated');
+      const overallStatusIndicator = document.getElementById('overall-status-indicator');
+      const overallStatusText = document.getElementById('overall-status-text');
+      const refreshBtn = document.getElementById('refresh-btn');
+      const autoRefreshCheckbox = document.getElementById('auto-refresh');
+
+      let autoRefreshInterval;
+      const REFRESH_INTERVAL = 30000; // 30 seconds
+
+      // Initialize auto refresh
+      if (autoRefreshCheckbox.checked) {
+        startAutoRefresh();
+      }
+
+      // Event listeners
+      refreshBtn.addEventListener('click', fetchModelHealth);
+
+      autoRefreshCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+          startAutoRefresh();
+        } else {
+          clearInterval(autoRefreshInterval);
+        }
+      });
+
+      function startAutoRefresh() {
+        clearInterval(autoRefreshInterval); // Clear existing interval if any
+        autoRefreshInterval = setInterval(fetchModelHealth, REFRESH_INTERVAL);
+      }
+
+      // Initial fetch
+      fetchModelHealth();
+
+      function fetchModelHealth() {
+        // Set loading states
+        overallStatusIndicator.className = 'status-indicator status-loading';
+        overallStatusText.textContent = 'Checking system status...';
+
+        fetch('/api/models/health', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          updateDashboard(data);
+        })
+        .catch(error => {
+          console.error('Error fetching model health:', error);
+          overallStatusIndicator.className = 'status-indicator status-unhealthy';
+          overallStatusText.textContent = 'System is experiencing issues';
+
+          // Show error in cards and table
+          statusCards.innerHTML = `
+            <div class="bg-white rounded-lg shadow p-4 col-span-full">
+              <h3 class="text-xl font-semibold text-red-600">Connection Error</h3>
+              <p class="text-gray-700 mt-2">Unable to fetch model status information. Please try again later.</p>
+            </div>
+          `;
+
+          metricsTableBody.innerHTML = `
+            <tr>
+              <td colspan="4" class="px-6 py-4 text-center text-red-500">
+                Error connecting to status API: ${error.message}
+              </td>
+            </tr>
+          `;
+
+          lastUpdated.textContent = new Date().toLocaleTimeString();
+        });
+      }
+
+      function updateDashboard(data) {
+        const { healthy, models, timestamp } = data;
+
+        // Update overall status
+        if (healthy) {
+          overallStatusIndicator.className = 'status-indicator status-healthy';
+          overallStatusText.textContent = 'All systems operational';
+          document.getElementById('system-status').className = 'mt-4 py-3 bg-green-50 rounded-lg flex items-center justify-center';
+        } else {
+          overallStatusIndicator.className = 'status-indicator status-unhealthy';
+          overallStatusText.textContent = 'Some systems experiencing issues';
+          document.getElementById('system-status').className = 'mt-4 py-3 bg-red-50 rounded-lg flex items-center justify-center';
+        }
+
+        // Update last updated time
+        const date = new Date(timestamp * 1000);
+        lastUpdated.textContent = date.toLocaleTimeString();
+
+        // Update cards
+        statusCards.innerHTML = '';
+
+        // Group models by their first segment (assuming naming like gpt-4, gpt-3.5, etc.)
+        const modelGroups = {};
+        models.forEach(model => {
+          const groupName = model.model.split('-')[0].toUpperCase();
+          if (!modelGroups[groupName]) {
+            modelGroups[groupName] = [];
+          }
+          modelGroups[groupName].push(model);
+        });
+
+        // Create a card for each model group
+        Object.keys(modelGroups).forEach(groupName => {
+          const groupModels = modelGroups[groupName];
+          const allHealthy = groupModels.every(m => m.status === 'healthy');
+
+          const card = document.createElement('div');
+          card.className = 'bg-white rounded-lg shadow p-4';
+
+          let modelsList = '';
+          groupModels.forEach(model => {
+            const statusClass = model.status === 'healthy' ? 'status-healthy' : 'status-unhealthy';
+            modelsList += `
+              <div class="flex items-center mt-2">
+                <span class="status-indicator ${statusClass}"></span>
+                <span class="text-sm">${model.model}</span>
+                <span class="ml-auto text-xs text-gray-500">${model.latency_ms.toFixed(0)} ms</span>
+              </div>
+            `;
+          });
+
+          card.innerHTML = `
+            <div class="flex items-center">
+              <span class="status-indicator ${allHealthy ? 'status-healthy' : 'status-unhealthy'}"></span>
+              <h3 class="text-lg font-semibold">${groupName}</h3>
+            </div>
+            <div class="mt-3">
+              ${modelsList}
+            </div>
+          `;
+
+          statusCards.appendChild(card);
+        });
+
+        // Update metrics table
+        metricsTableBody.innerHTML = '';
+
+        models.sort((a, b) => a.model.localeCompare(b.model)).forEach(model => {
+          const tr = document.createElement('tr');
+
+          // Determine latency class
+          let latencyClass = '';
+          if (model.latency_ms > 1000) {
+            latencyClass = 'latency-danger';
+          } else if (model.latency_ms > 500) {
+            latencyClass = 'latency-warning';
+          }
+
+          // Calculate latency bar width as percentage (max 2000ms)
+          const latencyPercentage = Math.min(model.latency_ms / 2000 * 100, 100);
+
+          tr.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">${model.model}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <span class="status-indicator ${model.status === 'healthy' ? 'status-healthy' : 'status-unhealthy'}"></span>
+                <span class="text-sm ${model.status === 'healthy' ? 'text-green-700' : 'text-red-700'}">
+                  ${model.status === 'healthy' ? 'Operational' : 'Disruption'}
+                </span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900 mb-1">${model.latency_ms.toFixed(0)} ms</div>
+              <div class="latency-bar">
+                <div class="latency-fill ${latencyClass}" style="width: ${latencyPercentage}%"></div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              ${model.error ? `<span class="text-red-500">${model.error}</span>` : '-'}
+            </td>
+          `;
+
+          metricsTableBody.appendChild(tr);
+        });
+      }
+    });
+  </script>
+</body>
+</html>

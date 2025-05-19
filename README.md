@@ -49,27 +49,27 @@ The server will be available at `http://localhost:8000`
 ### API Endpoints
 
 - `GET /`: Root endpoint with service information
-- `GET /health`: Service health check
-- `POST /models/health`: Check health of multiple models
-- `GET /models/{model_id}/health`: Check health of a specific model
+- `GET /api/health`: Service health check
+- `POST /api/models/health`: Check health of multiple models
+- `GET /api/models/{model_id}/health`: Check health of a specific model
 
 ### Example Requests
 
 Check default models:
 ```bash
-curl -X POST http://localhost:8000/models/health
+curl -X POST http://localhost:8000/api/models/health
 ```
 
 Check specific models:
 ```bash
-curl -X POST http://localhost:8000/models/health \
+curl -X POST http://localhost:8000/api/models/health \
   -H "Content-Type: application/json" \
   -d '{"models": ["gpt-4o", "gpt-3.5-turbo"], "timeout": 15}'
 ```
 
 Check a single model:
 ```bash
-curl http://localhost:8000/models/gpt-4o/health
+curl http://localhost:8000/api/models/gpt-4o/health
 ```
 
 ## Documentation
