@@ -72,7 +72,7 @@
     <div class="flex justify-end mb-4">
       <label class="inline-flex items-center text-sm text-gray-700">
         <input type="checkbox" id="auto-refresh" class="form-checkbox h-4 w-4 text-blue-600" checked>
-        <span class="ml-2">Auto refresh (30s)</span>
+        <span class="ml-2">Auto refresh (10min)</span>
       </label>
     </div>
 
@@ -146,7 +146,7 @@
       const autoRefreshCheckbox = document.getElementById('auto-refresh');
 
       let autoRefreshInterval;
-      const REFRESH_INTERVAL = 30000; // 30 seconds
+      const REFRESH_INTERVAL = 600000; // 10 min
 
       // Initialize auto refresh
       if (autoRefreshCheckbox.checked) {
