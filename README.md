@@ -32,7 +32,7 @@ Create a `.env` file in the project root:
 ```
 DRIVEX_URL=https://api.drivex.com/v1
 DRIVEX_KEY=your_drivex_api_key
-DRIVEX_TIMEOUT=6000
+DRIVEX_TIMEOUT=30
 ```
 
 ## Usage

@@ -25,7 +25,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 class Settings:
     DRIVEX_URL: str = os.getenv("DRIVEX_URL", "http://127.0.0.1")
     DRIVEX_KEY: str = os.getenv("DRIVEX_KEY", "")
-    DRIVEX_TIMEOUT: int = int(os.getenv("DRIVEX_TIMEOUT", "6000"))
+    DRIVEX_TIMEOUT: int = int(os.getenv("DRIVEX_TIMEOUT", "30"))
 
 
 settings = Settings()
