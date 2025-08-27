@@ -35,7 +35,7 @@
     <!-- Header -->
     <header class="text-center mb-8">
       <h1 class="text-3xl font-bold text-gray-800">StatusX</h1>
-      <p class="text-gray-600 mt-2">DriveX Chat & Embedding Model Status Dashboard</p>
+      <p class="text-gray-600 mt-2">DriveX Chat, Embedding & Image Model Status Dashboard</p>
       <div id="system-status" class="mt-4 py-3 bg-gray-100 rounded-lg flex items-center justify-center">
         <span id="overall-status-indicator" class="status-indicator status-loading"></span>
         <span id="overall-status-text">Checking system status...</span>
@@ -95,7 +95,7 @@
         overallStatusIndicator.className = 'status-indicator status-loading';
         overallStatusText.textContent = 'Checking system status...';
 
-        // Fetch both chat and embedding models health
+        // Fetch chat, embedding, and image models health
         const chatModelsPromise = fetch('/api/models/health', {
           method: 'POST',
           headers: {
@@ -110,31 +110,49 @@
           }
         });
 
-        Promise.all([chatModelsPromise, embeddingModelsPromise])
+        const imageModelsPromise = fetch('/api/images/health', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        Promise.all([chatModelsPromise, embeddingModelsPromise, imageModelsPromise])
         .then(responses => {
           return Promise.all([
             responses[0].ok ? responses[0].json() : Promise.reject(new Error(`Chat models API error: ${responses[0].status}`)),
-            responses[1].ok ? responses[1].json() : Promise.reject(new Error(`Embedding models API error: ${responses[1].status}`))
+            responses[1].ok ? responses[1].json() : Promise.reject(new Error(`Embedding models API error: ${responses[1].status}`)),
+            responses[2].ok ? responses[2].json() : Promise.reject(new Error(`Image models API error: ${responses[2].status}`))
           ]);
         })
-        .then(([chatData, embeddingData]) => {
+        .then(([chatData, embeddingData, imageData]) => {
           // Filter embedding models that contain 'embedding' in their name
           const filteredEmbeddingModels = embeddingData.models.filter(model =>
             model.model.toLowerCase().includes('embedding')
           );
-          // Filter out embedding models from chat models
-          const filteredChatModels = chatData.models.filter(model =>
-            !model.model.toLowerCase().includes('embedding')
+
+          // Filter image models that contain 'image' in their name
+          const filteredImageModels = imageData.models.filter(model =>
+            model.model.toLowerCase().includes('image')
           );
+
+          // Filter out embedding and image models from chat models
+          const filteredChatModels = chatData.models.filter(model =>
+            !model.model.toLowerCase().includes('embedding') &&
+            !model.model.toLowerCase().includes('image')
+          );
+
           // Combine the data
           const combinedData = {
             healthy: (filteredChatModels.length === 0 || filteredChatModels.every(model => model.status === 'healthy')) &&
-                    (filteredEmbeddingModels.length === 0 || filteredEmbeddingModels.every(model => model.status === 'healthy')),
+                    (filteredEmbeddingModels.length === 0 || filteredEmbeddingModels.every(model => model.status === 'healthy')) &&
+                    (filteredImageModels.length === 0 || filteredImageModels.every(model => model.status === 'healthy')),
             models: [
               ...filteredChatModels.map(model => ({ ...model, type: 'chat' })),
-              ...filteredEmbeddingModels.map(model => ({ ...model, type: 'embedding' }))
+              ...filteredEmbeddingModels.map(model => ({ ...model, type: 'embedding' })),
+              ...filteredImageModels.map(model => ({ ...model, type: 'image' }))
             ],
-            timestamp: Math.max(chatData.timestamp, embeddingData.timestamp)
+            timestamp: Math.max(chatData.timestamp, embeddingData.timestamp, imageData.timestamp)
           };
           updateDashboard(combinedData);
         })
@@ -176,9 +194,10 @@
         // Update cards
         statusCards.innerHTML = '';
 
-        // Group models by type (chat vs embedding) and then by model family
+        // Group models by type (chat vs embedding vs image) and then by model family
         const chatModels = models.filter(model => model.type === 'chat');
         const embeddingModels = models.filter(model => model.type === 'embedding');
+        const imageModels = models.filter(model => model.type === 'image');
 
         // Create chat models card
         if (chatModels.length > 0) {
@@ -258,6 +277,50 @@
               <div class="flex items-center">
                 <span class="status-indicator ${allHealthy ? 'status-healthy' : 'status-unhealthy'}"></span>
                 <h3 class="text-lg font-semibold">${groupName} Embedding</h3>
+              </div>
+              <div class="mt-3">
+                ${modelsList}
+              </div>
+            `;
+
+            statusCards.appendChild(card);
+          });
+        }
+
+        // Create image models card
+        if (imageModels.length > 0) {
+          const imageModelGroups = {};
+          imageModels.forEach(model => {
+            const groupName = model.model.split('-')[0].toUpperCase();
+            if (!imageModelGroups[groupName]) {
+              imageModelGroups[groupName] = [];
+            }
+            imageModelGroups[groupName].push(model);
+          });
+
+          Object.keys(imageModelGroups).forEach(groupName => {
+            const groupModels = imageModelGroups[groupName];
+            const allHealthy = groupModels.every(m => m.status === 'healthy');
+
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-lg shadow p-4';
+
+            let modelsList = '';
+            groupModels.forEach(model => {
+              const statusClass = model.status === 'healthy' ? 'status-healthy' : 'status-unhealthy';
+              modelsList += `
+                <div class="flex items-center mt-2">
+                  <span class="status-indicator ${statusClass}"></span>
+                  <span class="text-sm">${model.model}</span>
+                  <span class="ml-auto text-xs text-gray-500">${model.latency_ms.toFixed(0)} ms</span>
+                </div>
+              `;
+            });
+
+            card.innerHTML = `
+              <div class="flex items-center">
+                <span class="status-indicator ${allHealthy ? 'status-healthy' : 'status-unhealthy'}"></span>
+                <h3 class="text-lg font-semibold">${groupName} Image</h3>
               </div>
               <div class="mt-3">
                 ${modelsList}
