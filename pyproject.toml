@@ -7,7 +7,7 @@ name = "statusx"
 version = "1.0.0"
 description = "statusx"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
     {name = "Jia", email = "angersax@sina.com"},

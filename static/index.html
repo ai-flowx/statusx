@@ -28,23 +28,6 @@
       50% { opacity: 1; }
       100% { opacity: 0.5; }
     }
-    .latency-bar {
-      height: 6px;
-      border-radius: 3px;
-      background-color: #e9ecef;
-      overflow: hidden;
-    }
-    .latency-fill {
-      height: 100%;
-      border-radius: 3px;
-      background-color: #28a745;
-    }
-    .latency-warning {
-      background-color: #ffc107;
-    }
-    .latency-danger {
-      background-color: #dc3545;
-    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -95,40 +78,6 @@
       </div>
     </div>
 
-    <!-- Detailed Metrics Table -->
-    <div class="bg-white rounded-lg shadow overflow-hidden mb-8">
-      <div class="p-4 border-b border-gray-200">
-        <h2 class="text-lg font-semibold text-gray-800">Detailed Metrics</h2>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead>
-            <tr class="bg-gray-50">
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latency</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Error</th>
-            </tr>
-          </thead>
-          <tbody id="metrics-table-body" class="bg-white divide-y divide-gray-200">
-            <tr>
-              <td colspan="4" class="px-6 py-4 text-center text-gray-500">Loading model metrics...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Past Incidents -->
-    <div class="bg-white rounded-lg shadow mb-8">
-      <div class="p-4 border-b border-gray-200">
-        <h2 class="text-lg font-semibold text-gray-800">Past Incidents</h2>
-      </div>
-      <div id="past-incidents" class="p-4">
-        <p class="text-gray-500 text-center py-4">No past incidents recorded.</p>
-      </div>
-    </div>
-
     <!-- Footer -->
     <footer class="text-center text-gray-500 text-sm py-4">
       <p>© 2025 StatusX - DriveX Model Status Dashboard</p>
@@ -138,7 +87,6 @@
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const statusCards = document.getElementById('status-cards');
-      const metricsTableBody = document.getElementById('metrics-table-body');
       const lastUpdated = document.getElementById('last-updated');
       const overallStatusIndicator = document.getElementById('overall-status-indicator');
       const overallStatusText = document.getElementById('overall-status-text');
@@ -197,20 +145,12 @@
           overallStatusIndicator.className = 'status-indicator status-unhealthy';
           overallStatusText.textContent = 'System is experiencing issues';
 
-          // Show error in cards and table
+          // Show error in cards
           statusCards.innerHTML = `
             <div class="bg-white rounded-lg shadow p-4 col-span-full">
               <h3 class="text-xl font-semibold text-red-600">Connection Error</h3>
               <p class="text-gray-700 mt-2">Unable to fetch model status information. Please try again later.</p>
             </div>
-          `;
-
-          metricsTableBody.innerHTML = `
-            <tr>
-              <td colspan="4" class="px-6 py-4 text-center text-red-500">
-                Error connecting to status API: ${error.message}
-              </td>
-            </tr>
           `;
 
           lastUpdated.textContent = new Date().toLocaleTimeString();
@@ -279,49 +219,6 @@
           `;
 
           statusCards.appendChild(card);
-        });
-
-        // Update metrics table
-        metricsTableBody.innerHTML = '';
-
-        models.sort((a, b) => a.model.localeCompare(b.model)).forEach(model => {
-          const tr = document.createElement('tr');
-
-          // Determine latency class
-          let latencyClass = '';
-          if (model.latency_ms > 1000) {
-            latencyClass = 'latency-danger';
-          } else if (model.latency_ms > 500) {
-            latencyClass = 'latency-warning';
-          }
-
-          // Calculate latency bar width as percentage (max 2000ms)
-          const latencyPercentage = Math.min(model.latency_ms / 2000 * 100, 100);
-
-          tr.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm font-medium text-gray-900">${model.model}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <span class="status-indicator ${model.status === 'healthy' ? 'status-healthy' : 'status-unhealthy'}"></span>
-                <span class="text-sm ${model.status === 'healthy' ? 'text-green-700' : 'text-red-700'}">
-                  ${model.status === 'healthy' ? 'Operational' : 'Disruption'}
-                </span>
-              </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm text-gray-900 mb-1">${model.latency_ms.toFixed(0)} ms</div>
-              <div class="latency-bar">
-                <div class="latency-fill ${latencyClass}" style="width: ${latencyPercentage}%"></div>
-              </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              ${model.error ? `<span class="text-red-500">${model.error}</span>` : '-'}
-            </td>
-          `;
-
-          metricsTableBody.appendChild(tr);
         });
       }
     });
