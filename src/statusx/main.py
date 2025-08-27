@@ -126,6 +126,59 @@ def check_model_health(model: str, timeout: int) -> ModelHealthResponse:
         )
 
 
+def check_embedding_model_health(model: str, timeout: int) -> ModelHealthResponse:
+    start_time = time.time()
+
+    endpoint = f"{settings.DRIVEX_URL}/embeddings"
+
+    headers = {
+        "Authorization": f"Bearer {settings.DRIVEX_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": model,
+        "input": "Hello",
+    }
+
+    try:
+        response = requests.post(
+            endpoint,
+            headers=headers,
+            json=payload,
+            timeout=timeout
+        )
+
+        latency = (time.time() - start_time) * 1000  # Convert to milliseconds
+
+        if response.status_code == 200:
+            return ModelHealthResponse(
+                model=model,
+                status="healthy",
+                latency_ms=round(latency, 2),
+                error=None
+            )
+        else:
+            try:
+                error_detail = response.json().get("error", {}).get("message", str(response.text))
+            except Exception:
+                error_detail = str(response.text)
+            return ModelHealthResponse(
+                model=model,
+                status="unhealthy",
+                latency_ms=round(latency, 2),
+                error=f"HTTP {response.status_code}: {error_detail}"
+            )
+    except Exception as e:
+        latency = (time.time() - start_time) * 1000
+        return ModelHealthResponse(
+            model=model,
+            status="unhealthy",
+            latency_ms=round(latency, 2),
+            error=str(e)
+        )
+
+
 def verify_api_key():
     if not settings.DRIVEX_KEY:
         raise HTTPException(
@@ -146,8 +199,10 @@ async def api_root():
         "version": "1.0.0",
         "endpoints": {
             "/api/health": "Service health check",
-            "/api/models/health": "Check health of multiple models",
-            "/api/models/{model_id}/health": "Check health of a specific model",
+            "/api/models/health": "Check health of multiple chat models",
+            "/api/models/{model_id}/health": "Check health of a specific chat model",
+            "/api/embeddings/health": "Check health of multiple embedding models",
+            "/api/embeddings/{model_id}/health": "Check health of a specific embedding model",
         }
     }
 
@@ -188,6 +243,47 @@ async def check_specific_model(
 ):
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, check_model_health, model_id, timeout)
+
+    if result.status != "healthy":
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content=result.model_dump()
+        )
+
+    return result
+
+
+@app.post("/api/embeddings/health", response_model=ModelsHealthResponse, tags=["Embeddings"])
+async def check_embeddings_health(
+        request: ModelCheckRequest = None,
+        _: None = Depends(verify_api_key)
+):
+    request = request or ModelCheckRequest()
+    timeout = request.timeout or settings.DRIVEX_TIMEOUT
+
+    loop = asyncio.get_event_loop()
+    models_to_check = await loop.run_in_executor(None, get_llm_models, timeout)
+    health_results = await asyncio.gather(*[
+        loop.run_in_executor(None, check_embedding_model_health, model, timeout) for model in models_to_check
+    ])
+
+    all_healthy = all(result.status == "healthy" for result in health_results)
+
+    return ModelsHealthResponse(
+        healthy=all_healthy,
+        models=health_results,
+        timestamp=time.time()
+    )
+
+
+@app.get("/api/embeddings/{model_id}/health", response_model=ModelHealthResponse, tags=["Embeddings"])
+async def check_specific_embedding_model(
+        model_id: str,
+        timeout: int = settings.DRIVEX_TIMEOUT,
+        _: None = Depends(verify_api_key)
+):
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, check_embedding_model_health, model_id, timeout)
 
     if result.status != "healthy":
         return JSONResponse(
