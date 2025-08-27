@@ -51,14 +51,6 @@
       </button>
     </div>
 
-    <!-- Auto refresh toggle -->
-    <div class="flex justify-end mb-4">
-      <label class="inline-flex items-center text-sm text-gray-700">
-        <input type="checkbox" id="auto-refresh" class="form-checkbox h-4 w-4 text-blue-600" checked>
-        <span class="ml-2">Auto refresh (10min)</span>
-      </label>
-    </div>
-
     <!-- Status Cards -->
     <div id="status-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
       <div class="bg-white rounded-lg shadow p-4 animate-pulse">
@@ -91,31 +83,9 @@
       const overallStatusIndicator = document.getElementById('overall-status-indicator');
       const overallStatusText = document.getElementById('overall-status-text');
       const refreshBtn = document.getElementById('refresh-btn');
-      const autoRefreshCheckbox = document.getElementById('auto-refresh');
-
-      let autoRefreshInterval;
-      const REFRESH_INTERVAL = 600000; // 10 min
-
-      // Initialize auto refresh
-      if (autoRefreshCheckbox.checked) {
-        startAutoRefresh();
-      }
 
       // Event listeners
       refreshBtn.addEventListener('click', fetchModelHealth);
-
-      autoRefreshCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-          startAutoRefresh();
-        } else {
-          clearInterval(autoRefreshInterval);
-        }
-      });
-
-      function startAutoRefresh() {
-        clearInterval(autoRefreshInterval); // Clear existing interval if any
-        autoRefreshInterval = setInterval(fetchModelHealth, REFRESH_INTERVAL);
-      }
 
       // Initial fetch
       fetchModelHealth();
