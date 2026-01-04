@@ -5,74 +5,151 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StatusX - DriveX Model Status Dashboard</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
     .status-indicator {
       width: 12px;
       height: 12px;
       border-radius: 50%;
       display: inline-block;
       margin-right: 8px;
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
     }
     .status-healthy {
-      background-color: #28a745;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
     }
     .status-unhealthy {
-      background-color: #dc3545;
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
     }
     .status-loading {
-      background-color: #ffc107;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       animation: pulse 1.5s infinite;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
     }
     @keyframes pulse {
-      0% { opacity: 0.5; }
-      50% { opacity: 1; }
-      100% { opacity: 0.5; }
+      0%, 100% { 
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% { 
+        opacity: 0.7;
+        transform: scale(1.1);
+      }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .card {
+      animation: fadeIn 0.5s ease-out;
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+    .model-item {
+      transition: all 0.2s ease;
+    }
+    .model-item:hover {
+      background-color: #f9fafb;
+      padding-left: 8px;
+    }
+    .refresh-btn {
+      transition: all 0.3s ease;
+    }
+    .refresh-btn:hover {
+      transform: rotate(180deg);
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .status-badge {
+      transition: all 0.3s ease;
+    }
+    .header-gradient {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 3rem 0;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
   </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
   <div class="container mx-auto px-4 py-8">
     <!-- Header -->
-    <header class="text-center mb-8">
-      <h1 class="text-3xl font-bold text-gray-800">StatusX</h1>
-      <p class="text-gray-600 mt-2">DriveX Chat, Embedding, Image & Reranker Model Status Dashboard</p>
-      <div id="system-status" class="mt-4 py-3 bg-gray-100 rounded-lg flex items-center justify-center">
-        <span id="overall-status-indicator" class="status-indicator status-loading"></span>
-        <span id="overall-status-text">Checking system status...</span>
+    <header class="header-gradient text-center -mx-4 px-4 mb-12 rounded-b-3xl">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-5xl font-bold mb-3 tracking-tight">
+          <span class="inline-block">🚀</span> StatusX
+        </h1>
+        <p class="text-xl opacity-90 mb-6">DriveX Chat, Embedding, Image & Reranker Model Status Dashboard</p>
+        <div id="system-status" class="inline-block py-3 px-6 bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-full flex items-center shadow-lg">
+          <span id="overall-status-indicator" class="status-indicator status-loading"></span>
+          <span id="overall-status-text" class="font-medium">Checking system status...</span>
+        </div>
       </div>
     </header>
 
-    <!-- Last updated -->
-    <div class="text-right text-sm text-gray-500 mb-4">
-      <span>Last updated: </span>
-      <span id="last-updated">Checking...</span>
-      <button id="refresh-btn" class="ml-2 px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs">
+    <!-- Controls Bar -->
+    <div class="flex justify-between items-center mb-6 bg-white rounded-lg shadow-sm p-4">
+      <div class="text-sm text-gray-600 flex items-center">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span>Last updated: </span>
+        <span id="last-updated" class="ml-1 font-medium text-gray-800">Checking...</span>
+      </div>
+      <button id="refresh-btn" class="flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-lg text-sm font-medium shadow-md hover:shadow-lg transition-all duration-300">
+        <svg class="w-4 h-4 mr-2 refresh-btn" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
         Refresh
       </button>
     </div>
 
     <!-- Status Cards -->
-    <div id="status-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-      <div class="bg-white rounded-lg shadow p-4 animate-pulse">
-        <div class="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-        <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
-        <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+    <div id="status-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <!-- Loading skeleton -->
+      <div class="bg-white rounded-xl shadow-lg p-6 animate-pulse">
+        <div class="h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-3/4 mb-4"></div>
+        <div class="space-y-3">
+          <div class="h-4 bg-gray-200 rounded w-full"></div>
+          <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+          <div class="h-4 bg-gray-200 rounded w-4/6"></div>
+        </div>
       </div>
-      <div class="bg-white rounded-lg shadow p-4 animate-pulse">
-        <div class="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-        <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
-        <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+      <div class="bg-white rounded-xl shadow-lg p-6 animate-pulse">
+        <div class="h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-3/4 mb-4"></div>
+        <div class="space-y-3">
+          <div class="h-4 bg-gray-200 rounded w-full"></div>
+          <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+          <div class="h-4 bg-gray-200 rounded w-4/6"></div>
+        </div>
       </div>
-      <div class="bg-white rounded-lg shadow p-4 animate-pulse">
-        <div class="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-        <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
-        <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+      <div class="bg-white rounded-xl shadow-lg p-6 animate-pulse">
+        <div class="h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-3/4 mb-4"></div>
+        <div class="space-y-3">
+          <div class="h-4 bg-gray-200 rounded w-full"></div>
+          <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+          <div class="h-4 bg-gray-200 rounded w-4/6"></div>
+        </div>
       </div>
     </div>
 
     <!-- Footer -->
-    <footer class="text-center text-gray-500 text-sm py-4">
-      <p>© 2025 StatusX - DriveX Model Status Dashboard</p>
+    <footer class="text-center text-gray-500 text-sm py-8 border-t border-gray-200">
+      <p class="flex items-center justify-center">
+        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd"></path>
+        </svg>
+        <span>© 2025 StatusX - DriveX Model Status Dashboard</span>
+      </p>
     </footer>
   </div>
 
@@ -179,9 +256,14 @@
 
           // Show error in cards
           statusCards.innerHTML = `
-            <div class="bg-white rounded-lg shadow p-4 col-span-full">
-              <h3 class="text-xl font-semibold text-red-600">Connection Error</h3>
-              <p class="text-gray-700 mt-2">Unable to fetch model status information. Please try again later.</p>
+            <div class="bg-white rounded-xl shadow-lg p-6 col-span-full card">
+              <div class="flex items-center mb-4">
+                <svg class="w-8 h-8 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h3 class="text-xl font-semibold text-red-600">Connection Error</h3>
+              </div>
+              <p class="text-gray-700">Unable to fetch model status information. Please try again later.</p>
             </div>
           `;
 
@@ -195,12 +277,12 @@
         // Update overall status
         if (healthy) {
           overallStatusIndicator.className = 'status-indicator status-healthy';
-          overallStatusText.textContent = 'All systems operational';
-          document.getElementById('system-status').className = 'mt-4 py-3 bg-green-50 rounded-lg flex items-center justify-center';
+          overallStatusText.textContent = '✓ All systems operational';
+          document.getElementById('system-status').className = 'inline-block py-3 px-6 bg-green-500 bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-full flex items-center shadow-lg transition-all duration-500';
         } else {
           overallStatusIndicator.className = 'status-indicator status-unhealthy';
-          overallStatusText.textContent = 'Some systems experiencing issues';
-          document.getElementById('system-status').className = 'mt-4 py-3 bg-red-50 rounded-lg flex items-center justify-center';
+          overallStatusText.textContent = '⚠ Some systems experiencing issues';
+          document.getElementById('system-status').className = 'inline-block py-3 px-6 bg-red-500 bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-full flex items-center shadow-lg transition-all duration-500';
         }
 
         // Update last updated time
@@ -232,26 +314,33 @@
             const allHealthy = groupModels.every(m => m.status === 'healthy');
 
             const card = document.createElement('div');
-            card.className = 'bg-white rounded-lg shadow p-4';
+            card.className = 'bg-white rounded-xl shadow-lg p-6 card border-l-4 ' + (allHealthy ? 'border-green-500' : 'border-red-500');
 
             let modelsList = '';
             groupModels.forEach(model => {
               const statusClass = model.status === 'healthy' ? 'status-healthy' : 'status-unhealthy';
               modelsList += `
-                <div class="flex items-center mt-2">
-                  <span class="status-indicator ${statusClass}"></span>
-                  <span class="text-sm">${model.model}</span>
-                  <span class="ml-auto text-xs text-gray-500">${model.latency_ms.toFixed(0)} ms</span>
+                <div class="flex items-center justify-between py-2 model-item rounded">
+                  <div class="flex items-center">
+                    <span class="status-indicator ${statusClass}"></span>
+                    <span class="text-sm font-medium text-gray-700">${model.model}</span>
+                  </div>
+                  <span class="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-600 rounded">${model.latency_ms.toFixed(0)}ms</span>
                 </div>
               `;
             });
 
             card.innerHTML = `
-              <div class="flex items-center">
-                <span class="status-indicator ${allHealthy ? 'status-healthy' : 'status-unhealthy'}"></span>
-                <h3 class="text-lg font-semibold">${groupName} Chat</h3>
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                  <span class="status-indicator ${allHealthy ? 'status-healthy' : 'status-unhealthy'}"></span>
+                  <h3 class="text-lg font-bold text-gray-800">💬 ${groupName} Chat</h3>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 rounded-full ${allHealthy ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                  ${groupModels.length} ${groupModels.length === 1 ? 'model' : 'models'}
+                </span>
               </div>
-              <div class="mt-3">
+              <div class="space-y-1">
                 ${modelsList}
               </div>
             `;
@@ -276,26 +365,33 @@
             const allHealthy = groupModels.every(m => m.status === 'healthy');
 
             const card = document.createElement('div');
-            card.className = 'bg-white rounded-lg shadow p-4';
+            card.className = 'bg-white rounded-xl shadow-lg p-6 card border-l-4 ' + (allHealthy ? 'border-blue-500' : 'border-red-500');
 
             let modelsList = '';
             groupModels.forEach(model => {
               const statusClass = model.status === 'healthy' ? 'status-healthy' : 'status-unhealthy';
               modelsList += `
-                <div class="flex items-center mt-2">
-                  <span class="status-indicator ${statusClass}"></span>
-                  <span class="text-sm">${model.model}</span>
-                  <span class="ml-auto text-xs text-gray-500">${model.latency_ms.toFixed(0)} ms</span>
+                <div class="flex items-center justify-between py-2 model-item rounded">
+                  <div class="flex items-center">
+                    <span class="status-indicator ${statusClass}"></span>
+                    <span class="text-sm font-medium text-gray-700">${model.model}</span>
+                  </div>
+                  <span class="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-600 rounded">${model.latency_ms.toFixed(0)}ms</span>
                 </div>
               `;
             });
 
             card.innerHTML = `
-              <div class="flex items-center">
-                <span class="status-indicator ${allHealthy ? 'status-healthy' : 'status-unhealthy'}"></span>
-                <h3 class="text-lg font-semibold">${groupName} Embedding</h3>
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                  <span class="status-indicator ${allHealthy ? 'status-healthy' : 'status-unhealthy'}"></span>
+                  <h3 class="text-lg font-bold text-gray-800">🔍 ${groupName} Embedding</h3>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 rounded-full ${allHealthy ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}">
+                  ${groupModels.length} ${groupModels.length === 1 ? 'model' : 'models'}
+                </span>
               </div>
-              <div class="mt-3">
+              <div class="space-y-1">
                 ${modelsList}
               </div>
             `;
@@ -320,26 +416,33 @@
             const allHealthy = groupModels.every(m => m.status === 'healthy');
 
             const card = document.createElement('div');
-            card.className = 'bg-white rounded-lg shadow p-4';
+            card.className = 'bg-white rounded-xl shadow-lg p-6 card border-l-4 ' + (allHealthy ? 'border-purple-500' : 'border-red-500');
 
             let modelsList = '';
             groupModels.forEach(model => {
               const statusClass = model.status === 'healthy' ? 'status-healthy' : 'status-unhealthy';
               modelsList += `
-                <div class="flex items-center mt-2">
-                  <span class="status-indicator ${statusClass}"></span>
-                  <span class="text-sm">${model.model}</span>
-                  <span class="ml-auto text-xs text-gray-500">${model.latency_ms.toFixed(0)} ms</span>
+                <div class="flex items-center justify-between py-2 model-item rounded">
+                  <div class="flex items-center">
+                    <span class="status-indicator ${statusClass}"></span>
+                    <span class="text-sm font-medium text-gray-700">${model.model}</span>
+                  </div>
+                  <span class="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-600 rounded">${model.latency_ms.toFixed(0)}ms</span>
                 </div>
               `;
             });
 
             card.innerHTML = `
-              <div class="flex items-center">
-                <span class="status-indicator ${allHealthy ? 'status-healthy' : 'status-unhealthy'}"></span>
-                <h3 class="text-lg font-semibold">${groupName} Image</h3>
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                  <span class="status-indicator ${allHealthy ? 'status-healthy' : 'status-unhealthy'}"></span>
+                  <h3 class="text-lg font-bold text-gray-800">🎨 ${groupName} Image</h3>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 rounded-full ${allHealthy ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700'}">
+                  ${groupModels.length} ${groupModels.length === 1 ? 'model' : 'models'}
+                </span>
               </div>
-              <div class="mt-3">
+              <div class="space-y-1">
                 ${modelsList}
               </div>
             `;
@@ -364,26 +467,33 @@
             const allHealthy = groupModels.every(m => m.status === 'healthy');
 
             const card = document.createElement('div');
-            card.className = 'bg-white rounded-lg shadow p-4';
+            card.className = 'bg-white rounded-xl shadow-lg p-6 card border-l-4 ' + (allHealthy ? 'border-yellow-500' : 'border-red-500');
 
             let modelsList = '';
             groupModels.forEach(model => {
               const statusClass = model.status === 'healthy' ? 'status-healthy' : 'status-unhealthy';
               modelsList += `
-                <div class="flex items-center mt-2">
-                  <span class="status-indicator ${statusClass}"></span>
-                  <span class="text-sm">${model.model}</span>
-                  <span class="ml-auto text-xs text-gray-500">${model.latency_ms.toFixed(0)} ms</span>
+                <div class="flex items-center justify-between py-2 model-item rounded">
+                  <div class="flex items-center">
+                    <span class="status-indicator ${statusClass}"></span>
+                    <span class="text-sm font-medium text-gray-700">${model.model}</span>
+                  </div>
+                  <span class="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-600 rounded">${model.latency_ms.toFixed(0)}ms</span>
                 </div>
               `;
             });
 
             card.innerHTML = `
-              <div class="flex items-center">
-                <span class="status-indicator ${allHealthy ? 'status-healthy' : 'status-unhealthy'}"></span>
-                <h3 class="text-lg font-semibold">${groupName} Reranker</h3>
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                  <span class="status-indicator ${allHealthy ? 'status-healthy' : 'status-unhealthy'}"></span>
+                  <h3 class="text-lg font-bold text-gray-800">⚡ ${groupName} Reranker</h3>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 rounded-full ${allHealthy ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}">
+                  ${groupModels.length} ${groupModels.length === 1 ? 'model' : 'models'}
+                </span>
               </div>
-              <div class="mt-3">
+              <div class="space-y-1">
                 ${modelsList}
               </div>
             `;
