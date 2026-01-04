@@ -63,26 +63,45 @@ The server will be available at `http://localhost:8000`
 
 - `GET /`: Root endpoint with service information
 - `GET /api/health`: Service health check
-- `POST /api/models/health`: Check health of multiple models
-- `GET /api/models/{model_id}/health`: Check health of a specific model
+- `POST /api/models/health`: Check health of multiple chat models
+- `GET /api/models/{model_id}/health`: Check health of a specific chat model
+- `POST /api/embeddings/health`: Check health of multiple embedding models
+- `GET /api/embeddings/{model_id}/health`: Check health of a specific embedding model
+- `POST /api/images/health`: Check health of multiple image models
+- `GET /api/images/{model_id}/health`: Check health of a specific image model
+- `POST /api/rerankers/health`: Check health of multiple reranker models
+- `GET /api/rerankers/{model_id}/health`: Check health of a specific reranker model
 
 ### Example Requests
 
-Check default models:
+Check chat models:
 ```bash
 curl -X POST http://localhost:8000/api/models/health
 ```
 
-Check specific models:
+Check embedding models:
 ```bash
-curl -X POST http://localhost:8000/api/models/health \
-  -H "Content-Type: application/json" \
-  -d '{"models": ["gpt-4o", "gpt-3.5-turbo"], "timeout": 15}'
+curl -X POST http://localhost:8000/api/embeddings/health
 ```
 
-Check a single model:
+Check image models:
+```bash
+curl -X POST http://localhost:8000/api/images/health
+```
+
+Check reranker models:
+```bash
+curl -X POST http://localhost:8000/api/rerankers/health
+```
+
+Check a specific model:
 ```bash
 curl http://localhost:8000/api/models/gpt-4o/health
+```
+
+Check a specific reranker model:
+```bash
+curl http://localhost:8000/api/rerankers/rerank-1/health
 ```
 
 ## Documentation
