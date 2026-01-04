@@ -37,7 +37,20 @@ DRIVEX_TIMEOUT=30
 
 ## Usage
 
-### Running the server
+### Running with Docker Compose
+
+```bash
+# Create .env file from example
+cp .env.example .env
+
+# Edit .env with your API credentials
+# Then start the service
+docker-compose up -d
+```
+
+The server will be available at `http://localhost:8000`
+
+### Running the server locally
 
 ```bash
 # Start the server

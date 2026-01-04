@@ -4,3 +4,7 @@ services:
     image: craftslab/statusx:latest
     ports:
       - "8000:8000"
+    environment:
+      - DRIVEX_URL=${DRIVEX_URL}
+      - DRIVEX_KEY=${DRIVEX_KEY}
+      - DRIVEX_TIMEOUT=${DRIVEX_TIMEOUT}
